@@ -5,17 +5,17 @@ var startTime;
 var endTime;
 var r;
 var db = {
-	//title: '10000行测试',
-	//description: '10000行测试描述',
+	//title: '100次循环测试',
+	//description: '100次循环测试描述',
 	list: []
 };
 for (var a = 1; a < 101; a++)
 	db.list.push({
 		index: a,
-		user: '<strong style="color:red">糖饼</strong>',
-		site: 'http://www.planeart.cn',
-		weibo: 'http://weibo.com/planeart',
-		QQweibo: 'http://t.qq.com/tangbin'
+		user: '<strong style="color:red">aaa</strong>',
+		site: 'http://www.bbb.cn',
+		weibo: 'http://weibo.com/ccc',
+		QQweibo: 'http://t.qq.com/ddd'
 	});
 
 var bmw = require('./bmw');

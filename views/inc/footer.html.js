@@ -1,0 +1,10 @@
+var $BMW__this = this;
+var $BMW__sb;
+var $BMW__blocks = {};
+var $BMW__forc = null;
+$BMW__blocks.toString = function() { return $BMW__sb; };
+$BMW__blocks.set__sb = function(sb) { $BMW__sb = sb; };
+var $BMW__exp = function(a) { return a===0?a:(a||''); };
+var print = function(a) { $BMW__sb = $BMW__sb + $BMW__exp(a); };
+if (typeof $BMW__importAs === 'undefined') $BMW__importAs = {};$BMW__sb = '文件不存在，或者无权限访问 g:\\nodejs\\bmw.js\\views\\inc\\footer.html';
+return $BMW__blocks;

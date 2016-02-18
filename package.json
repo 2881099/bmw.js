@@ -1,0 +1,27 @@
+{
+  "name": "bmwjs",
+  "version": "1.0.0",
+  "description": "Powerful, fastest template engine",
+  "main": "bmw.js",
+  "dependencies": {
+    "benchmark": "^2.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2881099/bmw.js.git"
+  },
+  "keywords": [
+    "bmwjs",
+    "bmw.js"
+  ],
+  "author": "2881099",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/2881099/bmw.js/issues"
+  },
+  "homepage": "https://github.com/2881099/bmw.js#readme"
+}

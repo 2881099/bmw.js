@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>{#title}</title>
+
+</head>
+<body>
+
+{%
+for (var a = 0; a < 100; a++) print(a);
+%}
+
+{block body}
+
+这是body
+{/block}
+
+{include ../header.html}
+
+{%
+for (var a = 0; a < 100; a++) print(a);
+%}
+
+{block body2}
+
+这是body2
+{/block}
+
+{include footer.html}
+
+
+{block body3}
+
+这是body3
+{/block}
+
+
+{for a forstart,forend}
+{#a}
+{include ../header.html}
+  {for b 100, 104}
+    {#b}
+  {/for}
+{/for}
+
+{if title === 'aaa' || (title === 'abc')}
+aaaaaa
+  {if false}
+    cccc
+  {/if}
+{else}
+bbbbbb
+{/if}
+
+</body>
+</html>

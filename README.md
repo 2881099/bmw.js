@@ -59,9 +59,13 @@ for (var a = 0; a < 100; a++)
 {/if}
 
 <!--三种循环-->
-{for i 1,101}
-{for item,index in items}
-{for key,index on json}
+{for i 1,101}                可自定义名 {for index2 表达式1 in 表达式2}
+
+{for item,index in items}    可选参数称 index
+                             可自定义名 {for item2, index99 in 数组表达式}
+
+{for key,item,index on json} 可选参数 item, index，
+                             可自定义名 {for key2, item2, index99 in 对象表达式}
 {/for}
 
 <!--不被解析-->

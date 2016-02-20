@@ -22,7 +22,7 @@ var bmw = require('./bmw');
 startTime = new Date().getTime();
 r = bmw.renderFile(__dirname + '/views_test/10000.bmw', db);
 endTime = new Date().getTime();
-//console.log(r);
+console.log(r);
 console.log('首次执行时间bmwjs：' + (endTime - startTime) + 'ms');
 
 var jade = require('jade');
@@ -38,10 +38,10 @@ var ejs = require('ejs').compile(`<ul>
 		var item = locals.list[a]; %>
 	<li><%= item.index %>. 用户: <%= item.user %>/ 网站：<%= item.site %></li>
 	<% } %>
-</ul>`, {_with: false});
+</ul>`, { _with: false });
 r = ejs(db);
 endTime = new Date().getTime();
-console.log(r);
+//console.log(r);
 console.log('首次执行时间ejs：' + (endTime - startTime) + 'ms');
 
 var handlebars = require('handlebars').compile(`<ul>
@@ -70,24 +70,29 @@ console.log('首次执行时间doT：' + (endTime - startTime) + 'ms');
 
 // add tests
 suite
+	.add('arr.push', function () {
+		var arr = [];
+		for (var a = 0; a < 100; a++) arr.push('我是中国人' + a);
+		arr.join();
+	})
 	.add('bmw.js', function () {
-		db.list[0].index ++;
+		db.list[0].index++;
 		r = bmw.renderFile(__dirname + '/views_test/index.bmw', db);
 	})
 	.add('jade', function () {
-		db.list[0].index ++;
+		db.list[0].index++;
 		jade.renderFile(__dirname + '/views_test/10000.jade', db);
 	})
 	.add('ejs', function () {
-		db.list[0].index ++;
+		db.list[0].index++;
 		r = ejs(db);
 	})
 	.add('handlebars', function () {
-		db.list[0].index ++;
+		db.list[0].index++;
 		r = handlebars(db);
 	})
 	.add('doT', function () {
-		db.list[0].index ++;
+		db.list[0].index++;
 		r = dot.a10000(db);
 	})
 // add listeners

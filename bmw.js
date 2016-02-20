@@ -18,7 +18,7 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 
 	var include = function (view, context) {
 		var carg = getContextArg(context);
-		var func_exec = function (isnew) {
+		function func_exec(isnew) {
 			if (isnew || typeof compiles[view].exec[carg.argkey] !== 'function') {
 				try {
 					/*
@@ -48,7 +48,7 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 				console.log(e1);
 				return '运行错误，' + view + '\r\n' + (e1.message || JSON.stringify(e1));
 			}
-		};
+		}
 		if (compiles[view]) {
 			var cv = compiles[view];
 			if (cv.exec['$BMW__handle_ok']) {
@@ -88,16 +88,14 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 				return ret;
 			}
 		}
-		return (function () {
-			var cv = compiles[view] = { exec: {} };
-			var content = '';
-			try { content = fs.readFileSync(view, 'utf-8'); } catch (e1) { content = '文件不存在，或者无权限访问 ' + view; }
-			var r = compile2(content);
-			//fs.writeFile(view + '.js', r, { encoding: 'utf-8' });
-			cv.exec['$BMW__handle_ok'] = 1;
-			cv.exec['$BMW__handle'] = r;
-			return func_exec(1);
-		})();
+		var cv2 = compiles[view] = { exec: {} };
+		var content = '';
+		try { content = fs.readFileSync(view, 'utf-8'); } catch (e1) { content = '文件不存在，或者无权限访问 ' + view; }
+		var r = compile2(content);
+		//fs.writeFile(view + '.js', r, { encoding: 'utf-8' });
+		cv2.exec['$BMW__handle_ok'] = 1;
+		cv2.exec['$BMW__handle'] = r;
+		return func_exec(1);
 	};
 	exports.renderFile = function (view, context) {
 		return include(path.join(view), context).toString();
@@ -114,18 +112,18 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 
 	var compile2 = exports.compile2 = function (content) {
 		var sb = ['var $BMW__this = this;\n\
-var $BMW__sb;\n\
-var $BMW__blocks = {};\n\
+var $BMW__sb = \'\';\n\
+var $BMW__blocks = { toString : function() { return $BMW__sb; }, set__sb : function(sb) { $BMW__sb = sb; } };\n\
+var $BMW__blocks_list = [];\n\
 var $BMW__forc = null;\n\
-$BMW__blocks.toString = function() { return $BMW__sb; };\n\
-$BMW__blocks.set__sb = function(sb) { $BMW__sb = sb; };\n\
-var $BMW__exp = function(a) { return a===0?a:(a||\'\'); };\n\
-var print = function(a) { $BMW__sb = $BMW__sb + $BMW__exp(a); };\n\
-if (typeof $BMW__importAs === \'undefined\') $BMW__importAs = {};', '', '', '$BMW__sb = \''];
+function $BMW__exp(a) { return a===0?a:(a||\'\'); };\n\
+function print(a) { $BMW__sb += $BMW__exp(a); };\n\
+if (typeof $BMW__importAs === \'undefined\') $BMW__importAs = {};', '', '', '$BMW__sb += \''];
 		var fori = [];
 		var includes = 0;
 		var extend = '';
 		var codeTree = [];
+		var bmw_tmpid = 0;
 
 		var error = null;
 		var throwError = function (msg) {
@@ -166,7 +164,7 @@ if (typeof $BMW__importAs === \'undefined\') $BMW__importAs = {};', '', '', '$BM
 				sb.push('$BMW__MISS.push(' + JSON.stringify(tmp_content_arr[a]) + ');');
 				tmp_content_arr[a] = '{#$BMW__MISS[' + miss_len++ + ']}';
 			}
-			sb.push('$BMW__sb = $BMW__sb + \'');
+			sb.push('$BMW__sb += \'');
 			content = tmp_content_arr.join('');
 		}
 		//扩展语法如 <div @if="表达式"></div>
@@ -203,14 +201,15 @@ if (typeof $BMW__importAs === \'undefined\') $BMW__importAs = {};', '', '', '$BM
 				case '$BMW__CODE':
 					//{% print('这个块内可以编写js代码'); %}
 					codeTree.push('$BMW__CODE');
-					return '\';';
+					return '\';\n';
 				case '/$BMW__CODE':
 					if (codeTree[codeTree.length - 1] !== '$BMW__CODE') {
 						throwError('编译出错，{% 与 %} 并没配对');
 						return $0;
 					}
 					codeTree.pop();
-					return '; $BMW__sb = $BMW__sb + \'';
+					return ';\n\
+$BMW__sb += \'';
 
 				case 'include':
 					//{include ../inc/header.html}
@@ -224,8 +223,8 @@ if (typeof $BMW__importAs === \'undefined\') $BMW__importAs = {};', '', '', '$BM
 					$2.replace(/^([^\s]+)\s+as\s+([\w_]+)$/i, function ($0, $1, $2) {
 						retimport = '\';\n\
 var ' + $2 + ' = {};\n\
-(function() { var r = $BMW__include.call(null, ' + JSON.stringify($1) + ', ' + $2 + '); if (typeof r === \'string\') $BMW__sb = $BMW__sb + r; }).call(null);\n\
-$BMW__sb = $BMW__sb + \'';
+(function() { var r = $BMW__include.call(null, ' + JSON.stringify($1) + ', ' + $2 + '); if (typeof r === \'string\') $BMW__sb += r; }).call(null);\n\
+$BMW__sb += \'';
 						includes++;
 						codeTree.push('import');
 					});
@@ -238,7 +237,7 @@ $BMW__sb = $BMW__sb + \'';
 						rettemplate = '\';\n\
 $BMW__importAs.' + $1 + ' = function(' + $3 + ') {\n\
 	var $BMW__sb;\n\
-	var print = function(a) { $BMW__sb = $BMW__sb + $BMW__exp(a); };\n\
+	var print = function(a) { $BMW__sb += $BMW__exp(a); };\n\
 	$BMW__sb = \'';
 						codeTree.push('module');
 					});
@@ -248,8 +247,10 @@ $BMW__importAs.' + $1 + ' = function(' + $3 + ') {\n\
 				case '/module':
 					var endmodule = codeTreeEnd('module');
 					if (endmodule.length === 0) return $0;
-					return endmodule + ' return $BMW__sb;};\n\
-$BMW__sb = $BMW__sb + \'';
+					return endmodule + '\n\
+	return $BMW__sb;\n\
+};\n\
+$BMW__sb += \'';
 
 				case 'extends':
 					//{extends ../inc/layout.html}
@@ -260,30 +261,28 @@ $BMW__sb = $BMW__sb + \'';
 				case 'block':
 					codeTree.push('block');
 					return '\';\n\
-$BMW__sb = $BMW__sb + (function() {\n\
-	var $BMW__sb;\n\
-	var print = function(a) { $BMW__sb = $BMW__sb + $BMW__exp(a); };\n\
-	var $BMW__block = $BMW__blocks[' + JSON.stringify(trim($2, ' ', '\t')) + '] = [$BMW__blocks.toString().length, 0];\n\
-	$BMW__sb = \'';
+$BMW__blocks_list.push($BMW__blocks[' + JSON.stringify(trim($2, ' ', '\t')) + '] = [$BMW__sb.length, 0]);\n\
+$BMW__sb += \'';
 
 				case '/block':
 					var endblock = codeTreeEnd('block');
 					if (endblock.length === 0) return $0;
-					return endblock + '$BMW__block[1] = $BMW__sb.length; return $BMW__sb;}).call(null);\n\
-$BMW__sb = $BMW__sb + \'';
+					return endblock + '\n\
+var $BMW__tmp' + ++bmw_tmpid + ' = $BMW__blocks_list.pop();\n\
+$BMW__tmp' + bmw_tmpid + '[1] = $BMW__sb.length - $BMW__tmp' + bmw_tmpid + '[0];\n\
+$BMW__sb += \'';
 
 				case '#':
 					//{#user.username}
-					return '\' + (function(){var ret;try{ret=' + $2 + ';}catch(e1){}return $BMW__exp(ret);}).call(null) + \'';
-					//return '\' + $BMW__exp(' + $2 + ') + \'';
+					if ($2.charAt(0) === '#') //{##a} 容错输出
+						return '\' + (function(){var ret;try{ret=' + $2.substr(1) + ';}catch(e1){}return $BMW__exp(ret);}).call(null) + \'';
+					return '\' + (' + $2 + ') + \'';
 
 				case 'for':
-					var retfor = '\' + (function() {\n\
-	var $BMW__sb = \'\';\n\
-	var print = function(a) { $BMW__sb = $BMW__sb + $BMW__exp(a); };';
+					var retfor = '\';';
 					if (fori.length === 0) {
 						retfor += '\n\
-	$BMW__forc = {};';
+$BMW__forc = {};';
 					}
 					var test = false;
 
@@ -292,17 +291,19 @@ $BMW__sb = $BMW__sb + \'';
 					$2.replace(/^([\w_]+)\s*,?\s*([\w_]+)?\s+in\s+(.+)/i, function ($0, $1, $2, $3) {
 						$1 = trim($1, ' ', '\t');
 						$2 = trim($2, ' ', '\t');
+						//(function(){try{$BMW__forarr=' + $3 + ';if(!$BMW__forarr.forEach)$BMW__forarr=[];}catch(e1){$BMW__forarr=[];}}).call(null);\n\
 						retfor += '\n\
-	var $BMW__forarr;\n\
-	(function(){try{$BMW__forarr=' + $3 + ';if(!$BMW__forarr.forEach)$BMW__forarr=[];}catch(e1){$BMW__forarr=[];}}).call(null);\n\
-	$BMW__forarr.forEach(function(' + $1 + ',$BMW__forarr_index) {\n\
-		$BMW__forc.' + $1 + ' = ' + $1 + ';';
+var $BMW__tmp' + ++bmw_tmpid + ' = ' + $3 + ';\n\
+var $BMW__tmp' + ++bmw_tmpid + ' = $BMW__tmp' + (bmw_tmpid - 1) + '.length;\n\
+for (var $BMW__tmp' + ++bmw_tmpid + ' = 0; $BMW__tmp' + bmw_tmpid + ' < $BMW__tmp' + (bmw_tmpid - 1) + '; $BMW__tmp' + bmw_tmpid + '++) {\n\
+//' + $3 + '.forEach(function(' + $1 + ($2 ? ',' + $2 : '') + ') {\n\
+	var ' + $1 + ' = $BMW__forc.' + $1 + ' = $BMW__tmp' + (bmw_tmpid - 2) + '[$BMW__tmp' + bmw_tmpid + '];';
 						if ($2) {
 							retfor += '\n\
-		var ' + $2 + ' = $BMW__forc.' + $2 + ' = $BMW__forarr_index;';
+	var ' + $2 + ' = $BMW__forc.' + $2 + ' = $BMW__tmp' + bmw_tmpid + ';';
 						}
 						retfor += '\n\
-		$BMW__sb = $BMW__sb + \'';
+	$BMW__sb += \'';
 						test = true;
 						codeTree.push('for');
 						fori.push('Array.forEach');
@@ -311,22 +312,27 @@ $BMW__sb = $BMW__sb + \'';
 					});
 					if (test) return retfor;
 
-					//{for key,index on jsonObject}
-					$2.replace(/^([\w_]+)\s*,?\s*([\w_]+)?\s+on\s+(.+)/i, function ($0, $1, $2, $3) {
+					//{for key,item,index on jsonObject}
+					$2.replace(/^([\w_]+)\s*,?\s*([\w_]+)?,?\s*([\w_]+)?\s+on\s+(.+)/i, function ($0, $1, $2, $3, $4) {
 						$1 = trim($1, ' ', '\t');
 						$2 = trim($2, ' ', '\t');
-						retfor += '\n\
-	var $BMW__forjson;\n\
-	var $BMW__forjson_index = -1;\n\
-	(function(){try{$BMW__forjson=' + $3 + ';}catch(e1){$BMW__forjson={};}}).call(null);\n\
-	for (var $BMW__forjson_key in $BMW__forjson) {\n\
-		var ' + $1 + ' = $BMW__forc.' + $1 + ' = $BMW__forjson_key;';
-						if ($2) {
+						$3 = trim($3, ' ', '\t');
+						//(function(){try{$BMW__forjson=' + $3 + ';}catch(e1){$BMW__forjson={};}}).call(null);\n\
+						if ($3)
 							retfor += '\n\
-		var ' + $2 + ' = $BMW__forc.' + $2 + ' = ++$BMW__forjson_index;';
-						}
+var ' + $3 + ' = -1;';
 						retfor += '\n\
-		$BMW__sb = $BMW__sb + \'';
+var $BMW__tmp' + ++bmw_tmpid + ' = ' + $4 + ';\n\
+for (var ' + $1 + ' in $BMW__tmp' + bmw_tmpid + ') {\n\
+	$BMW__forc.' + $1 + ' = ' + $1 + ';';
+						if ($2)
+							retfor += '\n\
+	var ' + $2 + ' = $BMW__forc.' + $2 + ' = $BMW__tmp' + bmw_tmpid + '[' + $1 + '];';
+						if ($3)
+							retfor += '\n\
+	$BMW__forc.' + $3 + ' = ++' + $3 + ';';
+						retfor += '\n\
+	$BMW__sb += \'';
 						test = true;
 						codeTree.push('for');
 						fori.push('JSON.forin');
@@ -337,14 +343,14 @@ $BMW__sb = $BMW__sb + \'';
 					//{for a forstart,forend} 支持模板变量，请保证forstart表达式中没有逗号
 					$2.replace(/^([\w_]+)\s+([^,]+)\s*,\s*(.+)/i, function ($0, $1, $2, $3) {
 						$1 = trim($1, ' ', '\t');
+						//(function(){try{$BMW__forstart=' + $2 + ';}catch(e1){}}).call(null);\n\
+						//(function(){try{$BMW__forend=' + $3 + ';}catch(e1){}}).call(null);\n\
 						retfor += '\n\
-	var $BMW__forstart = 0;\n\
-	var $BMW__forend = 0;\n\
-	(function(){try{$BMW__forstart=' + $2 + ';}catch(e1){}}).call(null);\n\
-	(function(){try{$BMW__forend=' + $3 + ';}catch(e1){}}).call(null);\n\
-	while ($BMW__forstart < $BMW__forend) {\
-		var ' + $1 + ' = $BMW__forc.' + $1 + ' = $BMW__forstart++;\n\
-		$BMW__sb = $BMW__sb + \'';
+var $BMW__tmp' + ++bmw_tmpid + ' = ' + $3 + ';\n\
+var $BMW__tmp' + ++bmw_tmpid + ' = ' + $2 + ';\n\
+while ($BMW__tmp' + bmw_tmpid + ' < $BMW__tmp' + (bmw_tmpid - 1) + ') {\n\
+	var ' + $1 + ' = $BMW__forc.' + $1 + ' = $BMW__tmp' + bmw_tmpid + '++;\n\
+	$BMW__sb += \'';
 						test = true;
 						codeTree.push('for');
 						fori.push('for.a2b');
@@ -356,44 +362,44 @@ $BMW__sb = $BMW__sb + \'';
 				case '/for':
 					var endfor = codeTreeEnd('for');
 					if (endfor.length === 0) return $0;
+					fori.pop();
 					return endfor + '\n\
-	}' + (fori.pop() === 'Array.forEach' ? ')' : '') + ';' + (fori.length <= 0 ? ' $BMW__forc = null;' : '') + '\n\
-	return $BMW__sb;\n\
-}).call(null) + \'';
+}' + //(fori.pop() === 'Array.forEach' ? ');' : '') + 
+						(fori.length <= 0 ? '\n$BMW__forc = null;' : '') + '\n\
+$BMW__sb += \'';
 
 				case 'if':
 					//{if user.id === 0 || user.isadmin === true && user.point > 100}
+					//(function(){var test=false;try{test=' + $2 + ';}catch(e1){};return test;}).call(null)
 					codeTree.push('if');
-					return '\' + (function() {\n\
-	var $BMW__sb = \'\';\n\
-	var print = function(a) { $BMW__sb = $BMW__sb + $BMW__exp(a); };\n\
-	if ((function(){var test=false;try{test=' + $2 + ';}catch(e1){};return test;}).call(null)) {\n\
-		$BMW__sb = \'';
+					return '\';\n\
+if (' + $2 + ') {\n\
+	$BMW__sb += \'';
 
 				case 'elseif':
 					//{elseif user.id === 0 || user.isadmin === true && user.point > 100}
+					(function () { var test = false; try { test = ' + $2 + '; } catch (e1) { }; return test; }).call(null)
 					var endelseif = codeTreeEnd('if');
 					if (endelseif.length === 0) return $0;
 					codeTree.push('if');
 					return endelseif + '\n\
-	} else if ((function(){var test=false;try{test = ' + $2 + ';}catch(e1){};return test;}).call(null)) {\n\
-		$BMW__sb = \'';
+} else if (' + $2 + ') {\n\
+	$BMW__sb += \'';
 
 				case 'else':
 					var endelse = codeTreeEnd('if');
 					if (endelse.length === 0) return $0;
 					codeTree.push('if');
 					return endelse + '\n\
-	} else {\n\
-		$BMW__sb = \'';
+} else {\n\
+	$BMW__sb += \'';
 
 				case '/if':
 					var endif = codeTreeEnd('if');
 					if (endif.length === 0) return $0;
 					return endif + '\n\
-	}\n\
-	return $BMW__sb;\n\
-}).call(null) + \'';
+}\n\
+$BMW__sb += \'';
 			}
 			return $0;
 		}));
@@ -401,26 +407,24 @@ $BMW__sb = $BMW__sb + \'';
 		sb.push('\';');
 		if (extend) {
 			sb.push('\n\
-return (function() {\n\
-	var r = $BMW__lib.include($BMW__lib.path.join($BMW__dirname, ' + JSON.stringify(extend) + '), $BMW__this);\n\
-	if (typeof r === \'string\') return r;\n\
-	var rstr = r.toString();\n\
-	var rstr_changed = false;\n\
-	for (var a in $BMW__blocks)\n\
-		if ($BMW__blocks[a].length === 2 && typeof $BMW__blocks[a][0] === \'number\' && typeof $BMW__blocks[a][1] === \'number\') {\n\
-			var sb2 = $BMW__sb.substr($BMW__blocks[a][0], $BMW__blocks[a][1]);\n\
-			if (r[a] && r[a].length === 2 && typeof r[a][0] === \'number\' && typeof r[a][1] === \'number\') {\n\
-				for (var b in r)\n\
-					if (r[b].length === 2 && typeof r[a][0] === \'number\' && r[b][0] > r[a][0])\n\
-						r[b][0] = r[b][0] - r[a][1] + sb2.length;\n\
-				rstr = rstr.substr(0, r[a][0]) + sb2 + rstr.substr(r[a][0] + r[a][1]);\n\
-				r[a][1] = sb2.length;\n\
-				rstr_changed = true;\n\
-			}\n\
+var r = $BMW__lib.include($BMW__lib.path.join($BMW__dirname, ' + JSON.stringify(extend) + '), $BMW__this);\n\
+if (typeof r === \'string\') return r;\n\
+var rstr = r.toString();\n\
+var rstr_changed = false;\n\
+for (var a in $BMW__blocks)\n\
+	if ($BMW__blocks[a].length === 2 && typeof $BMW__blocks[a][0] === \'number\' && typeof $BMW__blocks[a][1] === \'number\') {\n\
+		var sb2 = $BMW__sb.substr($BMW__blocks[a][0], $BMW__blocks[a][1]);\n\
+		if (r[a] && r[a].length === 2 && typeof r[a][0] === \'number\' && typeof r[a][1] === \'number\') {\n\
+			for (var b in r)\n\
+				if (r[b].length === 2 && typeof r[a][0] === \'number\' && r[b][0] > r[a][0])\n\
+					r[b][0] = r[b][0] - r[a][1] + sb2.length;\n\
+			rstr = rstr.substr(0, r[a][0]) + sb2 + rstr.substr(r[a][0] + r[a][1]);\n\
+			r[a][1] = sb2.length;\n\
+			rstr_changed = true;\n\
 		}\n\
-	if (rstr_changed) r.set__sb(rstr);\n\
-	return r;\n\
-}).call(null);');
+	}\n\
+if (rstr_changed) r.set__sb(rstr);\n\
+return r;');
 		} else {
 			sb.push('\n\
 return $BMW__blocks;');
@@ -447,7 +451,7 @@ var $BMW__include = function(file, $BMW__importAs) {\n\
 };';
 		}
 		return error || sb.join('')
-			.replace(/\s*\$BMW__sb\s*=\s*\$BMW__sb\s*\+\s*'';\s*/g, '');
+			.replace(/\s*\$BMW__sb\s*\+=\s*'';\s*/g, '');
 		//.replace(/\\/g, '\\\\');
 	};
 
@@ -575,6 +579,7 @@ var $BMW__include = function(file, $BMW__importAs) {\n\
 		return ret.length ? ret : [str];
 	};
 
+	/*
 	if (!Array.prototype.forEach && typeof Array.prototype.forEach !== 'function') {
 		Array.prototype.forEach = function (fn, thisArg) {
 			if (Object.prototype.toString.call(this) === '[object Array]') {
@@ -586,6 +591,7 @@ var $BMW__include = function(file, $BMW__importAs) {\n\
 			}
 		};
 	}
+	*/
 
 	var lib = {
 		path: path,

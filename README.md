@@ -24,6 +24,10 @@ Fastest is bmw.js
 </head>
 <body>
 
+<!--绑定表达式-->
+{#表达式}
+{##表达式} 当表达式可能发生runtime错误时使用，性能没有上面的高
+
 <!--可嵌套使用，同一标签最多支持3个指令-->
 {include ../header.html}
 <div @for="i 1, 101">

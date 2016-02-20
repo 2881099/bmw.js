@@ -93,7 +93,6 @@ $('#tplcode1').html(bmwjs.render(tpl, {}));
 </script>
 ```
 
-
 # nodejs 中接入到 express 使用　
 ```javascript
 var bmw = require('bmw');
@@ -106,4 +105,22 @@ app.engine('html', function (filePath, options, callback) { // 定义模板引�
 
 app.set('views', path.join(__dirname, 'views_bmw'));
 app.set('view engine', 'html');
+```
+
+# 在模板中打印 this
+通过 this 可以访问模板渲染对象
+```html
+<table class="table">
+	<thead>
+		<tr>
+			<th style="font-weight:bold;font-size:30px;color:#ff55dd;">打印模板变局 this</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr @for="key,item on this">
+			<td style="font-weight:bold;font-size:18px;">this.{#key}</td>
+			<td style="width:80%;"><textarea style="width:100%;height:30px;" onfocus="this.style.height='300px';" onblur="this.style.height='30px';">{##JSON.stringify(item)}</textarea></td>
+		</tr>
+	</tbody>
+</table>
 ```

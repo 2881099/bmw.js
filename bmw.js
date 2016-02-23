@@ -6,43 +6,49 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 	if (typeof JSON === 'undefined') JSON = { stringify: function (str) { return '"' + String(str).replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n') + '"'; } };
 	var compiles = {};
 
-	var getContextArg = function (context) {
+	function getContextArg(context) {
 		var argkeys = [];
 		var argvalues = [];
+		var argkey = '';
 		for (var a in context) argkeys.push(a);
 		argkeys = argkeys.sort();
-		for (var b = 0; b < argkeys.length; b++) argvalues.push(context[argkeys[b]]);
-		var argkey = argkeys.sort().join(', ');
+		var argkeys_len = argkeys.length;
+		for (var b = 0; b < argkeys_len; b++) {
+			argvalues.push(context[argkeys[b]]);
+			if (b > 0) argkey += ', ';
+			argkey += argkeys[b];
+		}
 		return { argkeys: argkeys, argvalues: argvalues, argkey: argkey };
-	};
+	}
 
-	var include = function (view, context) {
+	function include(view, context) {
 		var carg = getContextArg(context);
 		function func_exec(isnew) {
-			if (isnew || typeof compiles[view].exec[carg.argkey] !== 'function') {
+			var cv = compiles[view];
+			if (isnew || typeof cv.exec[carg.argkey] !== 'function') {
 				try {
 					/*
-					compiles[view].exec[carg.argkey] = eval(['(function($BMW__dirname, $BMW__lib',
+					cv.exec[carg.argkey] = eval(['(function($BMW__dirname, $BMW__lib',
 						carg.argkeys.length === 0 ? '' : ', ',
 						carg.argkeys.join(', '), ') {',
-						compiles[view].exec['$BMW__handle'], '})'].join(''));
-					compiles[view].exec[carg.argkey] = function($BMW__dirname, $BMW__lib) {
+						cv.exec['$BMW__handle'], '})'].join(''));
+					cv.exec[carg.argkey] = function($BMW__dirname, $BMW__lib) {
 						return '';
 					};
 					*/
-					compiles[view].exec[carg.argkey] = Function.apply(context,
+					cv.exec[carg.argkey] = Function.apply(context,
 						['$BMW__dirname', '$BMW__lib'].concat(carg.argkeys)
-							.concat([compiles[view].exec['$BMW__handle']]));
+							.concat([cv.exec['$BMW__handle']]));
 				} catch (e1) {
-					compiles[view].exec[carg.argkey] = function (dirname, lib) {
+					cv.exec[carg.argkey] = function (dirname, lib) {
 						return '编译失败，请检查 ' + view + '\r\n' + (e1.message || JSON.stringify(e1));
 					};
 				}
 			}
 			if (isnew === 2) return;
 			try {
-				var ret = compiles[view].exec[carg.argkey].apply(context,
-					[path.dirname(view), lib].concat(carg.argvalues));
+				var ret = cv.exec[carg.argkey].apply(context,
+					[cv.dirname, lib].concat(carg.argvalues));
 				return ret;
 			} catch (e1) {
 				console.log(e1);
@@ -88,7 +94,7 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 				return ret;
 			}
 		}
-		var cv2 = compiles[view] = { exec: {} };
+		var cv2 = compiles[view] = { dirname : path.dirname(view), exec: {} };
 		var content = '';
 		try { content = fs.readFileSync(view, 'utf-8'); } catch (e1) { content = '文件不存在，或者无权限访问 ' + view; }
 		var r = compile2(content);
@@ -98,12 +104,13 @@ var bmwjs = typeof exports === 'undefined' ? (exports = {}) : exports;
 		return func_exec(1);
 	};
 	exports.renderFile = function (view, context) {
-		return include(path.join(view), context).toString();
+		//view = path.join(view); 请在调用 renderFile 之前格式化好 view
+		return include(view, context).toString();
 	};
 	exports.render = function (text, context) {
 		var carg = getContextArg(context);
 		var source = compile2(text);
-		if (typeof __dirname === 'undefined') __dirname = '';
+		if (typeof __dirname === 'undefined') __dirname = 'render';
 		return Function.apply(context,
 			['$BMW__dirname', '$BMW__lib'].concat(carg.argkeys)
 				.concat(source)).apply(context,
@@ -130,30 +137,31 @@ if (typeof $BMW__importAs === \'undefined\') $BMW__importAs = {};', '', '', '$BM
 			error = 'return \'' + msg + '\';';
 		}
 		var codeTreeEnd = function (tag) {
-			var ret = [];
+			var ret = '';
+			var pop = [];
 			for (var a = codeTree.length - 1; a >= 0; a--) {
 				var isbreak = false;
 				switch (codeTree[a]) {
 					case 'import':
 					case 'include':
-						//ret.push('});')
-						ret.push('');
+						//ret += '});';
+						pop.push(1);
 						break;
 					case tag:
-						ret.unshift('\';');
+						pop.unshift(2);
+						ret = '\';' + ret;
 						isbreak = true;
 						break;
 					default:
-						if (!isbreak && tag !== 'undefined') ret = [];
+						if (!isbreak && tag !== 'undefined') pop = [];
 						isbreak = true;
 				}
 				if (isbreak) break;
 			}
-			if (ret.length === 0 && tag !== 'undefined')
+			if (pop.length === 0 && tag !== 'undefined')
 				throwError('语法错误，{' + tag + '} ' + ' {/' + tag + '} 并没配对');
-			for (var a = 0; a < ret.length; a++)
-				codeTree.pop();
-			return ret.join('');
+			while (pop.pop()) codeTree.pop();
+			return ret;
 		};
 		//{miss}...{/miss}块内容将不被解析
 		var tmp_content_arr = reg_split(content, /\{\/?miss\}/g);

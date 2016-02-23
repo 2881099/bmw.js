@@ -40,7 +40,7 @@
 	console.log(r);
 	console.log('首次执行时间：' + (endTime - startTime) + 'ms');
 
-	for (var a = 0; a < 100; a++) {
+	for (var a = 0; a < 0; a++) {
 		var startTime2 = new Date().getTime();
 		var r = bmw.renderFile(__dirname + '/views/index.html', db);
 		//console.log(r);

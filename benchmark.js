@@ -77,7 +77,7 @@ suite
 	})
 	.add('bmw.js', function () {
 		db.list[0].index++;
-		r = bmw.renderFile(__dirname + '/views_test/index.bmw', db);
+		r = bmw.renderFile(__dirname + '/views_test/10000.bmw', db);
 	})
 	.add('jade', function () {
 		db.list[0].index++;

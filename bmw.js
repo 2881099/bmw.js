@@ -416,6 +416,7 @@ $BMW__sb += \'';
 		if (extend) {
 			sb.push('\n\
 var r = $BMW__lib.include($BMW__lib.path.join($BMW__dirname, ' + JSON.stringify(extend) + '), $BMW__this);\n\
+if (!r) return \'\';\n\
 if (typeof r === \'string\') return r;\n\
 var rstr = r.toString();\n\
 var rstr_changed = false;\n\
